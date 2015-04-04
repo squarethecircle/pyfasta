@@ -43,7 +43,7 @@ class FastaRecord(object):
         """
         f = fasta_obj.fasta_name
         if klass.is_current(f):
-            with open(f + klass.idx, 'rb') as fh:
+            with open(f + klass.idx, 'rwb') as fh:
                 idx = cPickle.load(fh)
             if flatten_inplace or ext_is_flat(f + klass.ext): flat = klass.modify_flat(f)
             else: flat = klass.modify_flat(f + klass.ext)
@@ -151,7 +151,17 @@ class FastaRecord(object):
             return fh.read(l)
 
         return fh.read(l)[::islice.step]
-
+   
+    def __setitem__(self,key,value):
+        if key >= 0:
+            key += self.start
+        else:
+            key += self.stop
+            if key < 0:
+                raise IndexError
+        self.fh.seek(key)
+        self.fh.write(value)
+        self.fh.flush()
 
     def __str__(self):
         return self[:]
@@ -204,6 +214,16 @@ class NpyFastaRecord(FastaRecord):
         d = self.getdata(islice)
         return d.tostring().decode() if self.as_string else d
 
+    def __setitem__(self,key,value):
+        if key >= 0:
+            key += self.start
+        else:
+            key += self.stop
+            if key < 0:
+                raise IndexError
+        self.mm[key] = value
+        self.mm.flush()
+
     @property
     def __array_interface__(self):
         old_as_string = self.as_string
@@ -239,6 +259,9 @@ class MemoryRecord(FastaRecord):
     def __getitem__(self, slice):
         return self.seq.__getitem__(slice)
 
+    def __setitem__(self, key, value):
+        self.seq[key] = value
+        
     def __len__(self):
         return len(self.seq)
 
