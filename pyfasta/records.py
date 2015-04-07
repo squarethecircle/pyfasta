@@ -12,7 +12,7 @@ def is_up_to_date(a, b):
 
 
 def ext_is_flat(ext):
-    with open(ext) as fh:
+    with open(ext,'r+') as fh:
         t = fh.read(len(MAGIC))
     return MAGIC == t
 
@@ -92,7 +92,7 @@ class FastaRecord(object):
 
     @classmethod
     def modify_flat(klass, flat_file):
-        return open(flat_file, 'r')
+        return open(flat_file, 'r+')
 
     def _adjust_slice(self, islice):
         l = len(self)
@@ -195,7 +195,7 @@ class NpyFastaRecord(FastaRecord):
 
     @classmethod
     def modify_flat(klass, flat_file):
-        mm = np.memmap(flat_file, dtype="S1", mode="r")
+        mm = np.memmap(flat_file, dtype="S1", mode="r+")
         return mm
 
     def getdata(self, islice):
@@ -260,8 +260,8 @@ class MemoryRecord(FastaRecord):
         return self.seq.__getitem__(slice)
 
     def __setitem__(self, key, value):
-        self.seq[key] = value
-        
+        self.seq=self.seq[:key]+value+self.seq[key+1:]
+
     def __len__(self):
         return len(self.seq)
 
